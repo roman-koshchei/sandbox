@@ -1,8 +1,9 @@
 ﻿using Data.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Sandbox.Lib;
+using System.ComponentModel.DataAnnotations;
+using Unator.Email;
 
 namespace Sandbox.Controllers
 {
@@ -10,24 +11,33 @@ namespace Sandbox.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private UserManager<SandboxUser> userManager;
-        private Jwt jwt;
+        private readonly UserManager<SandboxUser> userManager;
+        private readonly Jwt jwt;
+        private readonly UEmailSender emailGod;
 
-        public AuthController(UserManager<SandboxUser> userManager, Jwt jwt)
+        public AuthController(UserManager<SandboxUser> userManager, Jwt jwt, UEmailSender emailGod)
         {
             this.userManager = userManager;
             this.jwt = jwt;
+            this.emailGod = emailGod;
         }
 
         public class RegisterInput
         {
+            [Required]
             public string Email { get; set; } = string.Empty;
+
+            [Required]
             public string Password { get; set; } = string.Empty;
+
+            [Required]
             public string ConfirmPassword { get; set; } = string.Empty;
+
+            [Required]
             public string Name { get; set; } = string.Empty;
         }
 
-        [HttpPost]
+        [HttpPost("/register")]
         public async Task<IActionResult> Register([FromBody] RegisterInput input)
         {
             input.Password = input.Password.Trim();
@@ -37,13 +47,26 @@ namespace Sandbox.Controllers
             if (input.Password != input.ConfirmPassword) return BadRequest("Confirm password isn't correct");
 
             input.Email = input.Email.Trim();
-            if (!string.IsNullOrEmpty(input.Email)) return BadRequest("Email isn't valid");
+            if (string.IsNullOrEmpty(input.Email)) return BadRequest("Email isn't valid");
 
             SandboxUser user = new(input.Email, input.Name.Trim());
 
             var operation = await userManager.CreateAsync(user, input.Password);
 
             if (!operation.Succeeded) return Problem(); // check errors
+
+            var verificationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var verificationEmail = await emailGod.Send("roman@paragoda.tech", "Sandbox", new List<string>() { user.Email },
+                subject: "Verify email at Sandbox by Roman Koshchei",
+                text: $"Use link to verify: https://localhost/api/auth/verify?token={verificationToken}",
+                html: $"<a href='https://localhost/api/auth/verify?token={verificationToken}'>Click to verify</a>"
+            );
+
+            if (verificationEmail != EmailStatus.Success)
+            {
+                // message about need to manually verify?
+                // or rollback user creation?
+            }
 
             // set cookie
             var token = jwt.Token(user.Id);
@@ -52,11 +75,14 @@ namespace Sandbox.Controllers
 
         public class LoginInput
         {
+            [Required]
             public string Email { get; set; } = string.Empty;
+
+            [Required]
             public string Password { get; set; } = string.Empty;
         }
 
-        [HttpPost]
+        [HttpPost("/login")]
         public async Task<IActionResult> Login([FromBody] LoginInput input)
         {
             input.Email = input.Email.Trim();

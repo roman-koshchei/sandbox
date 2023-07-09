@@ -8,5 +8,6 @@ public class Db : IdentityDbContext<SandboxUser>
 {
     public Db(DbContextOptions options) : base(options)
     {
+        Database.EnsureCreated();
     }
 }

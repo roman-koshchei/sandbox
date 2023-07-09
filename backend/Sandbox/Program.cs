@@ -1,9 +1,11 @@
 using Data;
 using Data.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Sandbox.Configuration;
 using Sandbox.Hubs;
-using Sandbox.Lib;
+using Unator;
 
 // Load env variables form .env (in development)
 Env.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
@@ -17,23 +19,25 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 //
-const string connectionString = "Sandbox.db";
+string connectionString = $"Data Source={Path.Combine(Directory.GetCurrentDirectory(), "db", "sandbox.db")}";
 builder.Services.AddDbContext<Db>(options => options.UseSqlite(connectionString));
 
-builder.Services.AddIdentityCore<SandboxUser>().AddEntityFrameworkStores<Db>();
+builder.Services
+    .AddIdentity<SandboxUser, IdentityRole>()
+    .AddEntityFrameworkStores<Db>()
+    .AddDefaultTokenProviders()
+    .AddTokenProvider<DataProtectorTokenProvider<SandboxUser>>("email");
 
 builder.Services.AddSignalR();
 
 builder.Services.AddJwt();
+builder.Services.AddEmail();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Use Swagger even in production mode
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

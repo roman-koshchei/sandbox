@@ -1,6 +1,7 @@
 # Sandbox
 
-Development Sandbox to try implement different features
+Development Sandbox to try implement different features.
+Try to not make bad code, but also go away from old standarts.
 
 Plan:
 
@@ -9,3 +10,4 @@ Plan:
 - [ ] Logging
 - [ ] Rate-limiter
 - [ ] Versioning
+- [ ] Webhooks
