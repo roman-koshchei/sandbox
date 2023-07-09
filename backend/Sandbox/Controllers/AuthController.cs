@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Sandbox.Lib;
 
 namespace Sandbox.Controllers
 {
@@ -10,10 +11,12 @@ namespace Sandbox.Controllers
     public class AuthController : ControllerBase
     {
         private UserManager<SandboxUser> userManager;
+        private Jwt jwt;
 
-        public AuthController(UserManager<SandboxUser> userManager)
+        public AuthController(UserManager<SandboxUser> userManager, Jwt jwt)
         {
             this.userManager = userManager;
+            this.jwt = jwt;
         }
 
         public class RegisterInput
@@ -43,8 +46,8 @@ namespace Sandbox.Controllers
             if (!operation.Succeeded) return Problem(); // check errors
 
             // set cookie
-
-            return Ok();
+            var token = jwt.Token(user.Id);
+            return Ok(token);
         }
 
         public class LoginInput
@@ -54,7 +57,7 @@ namespace Sandbox.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(HttpResponse response, [FromBody] LoginInput input)
+        public async Task<IActionResult> Login([FromBody] LoginInput input)
         {
             input.Email = input.Email.Trim();
             if (string.IsNullOrEmpty(input.Email)) return BadRequest("Email can't be empty.");
@@ -69,13 +72,16 @@ namespace Sandbox.Controllers
             if (!isValid) return BadRequest("Password is incorrect.");
 
             // set cookie
+            /*
             response.Cookies.Append("location", "token", new CookieOptions
             {
                 Expires = DateTime.Now.AddDays(30),
                 HttpOnly = true,
             });
+            */
 
-            return Ok();
+            var token = jwt.Token(user.Id);
+            return Ok(token);
         }
     }
 }
