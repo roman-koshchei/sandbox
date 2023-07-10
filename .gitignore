@@ -7,6 +7,15 @@
 */.env
 **/.env
 
+# Local database tmp files
+
+.db-wal
+*/.db-wal
+**/.db-wal
+.db-shm
+*/.db-shm
+**/.db-shm
+
 # User-specific files
 *.rsuser
 *.suo
@@ -400,3 +409,5 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/backend/Sandbox/db/sandbox.db-shm
+/backend/Sandbox/db/sandbox.db-wal
