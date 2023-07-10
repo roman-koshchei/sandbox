@@ -11,3 +11,15 @@ Plan:
 - [ ] Rate-limiter
 - [ ] Versioning
 - [ ] Webhooks
+- [ ] Full database migration:
+  - [ ] sql to sql
+  - [ ] sql to nosql
+
+Backend Environment variables:
+
+```bash
+RESEND_API_KEY=api-key-for-resend-email-service
+JWT_ISSUER=issuer
+JWT_AUDIENCE=audience
+JWT_SECRET=secret
+```
