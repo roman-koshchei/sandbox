@@ -1,6 +1,8 @@
 ﻿using Data.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Sandbox.Auth;
 using Sandbox.Lib;
 using System.ComponentModel.DataAnnotations;
 using Unator.Email;
@@ -22,6 +24,14 @@ namespace Sandbox.Controllers
             this.emailGod = emailGod;
         }
 
+        [Authorize]
+        [HttpPost("me")]
+        public IActionResult GetSomething()
+        {
+            var uid = User.FindFirst(Jwt.Uid)?.Value;
+            return Ok(uid);
+        }
+
         public class RegisterInput
         {
             [Required]
@@ -37,7 +47,7 @@ namespace Sandbox.Controllers
             public string Name { get; set; } = string.Empty;
         }
 
-        [HttpPost("/register")]
+        [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterInput input)
         {
             input.Password = input.Password.Trim();
@@ -68,9 +78,17 @@ namespace Sandbox.Controllers
                 // or rollback user creation?
             }
 
-            // set cookie
-            var token = jwt.Token(user.Id);
-            return Ok(token);
+            var token = jwt.Token(user.Id, user.Version);
+
+            Response.Cookies.Append(RefreshOnly.Cookie, token, new()
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.Now.AddDays(30)
+            });
+
+            return Ok();
         }
 
         public class LoginInput
@@ -82,7 +100,7 @@ namespace Sandbox.Controllers
             public string Password { get; set; } = string.Empty;
         }
 
-        [HttpPost("/login")]
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginInput input)
         {
             input.Email = input.Email.Trim();
@@ -97,16 +115,15 @@ namespace Sandbox.Controllers
             var isValid = await userManager.CheckPasswordAsync(user, input.Password);
             if (!isValid) return BadRequest("Password is incorrect.");
 
-            // set cookie
-            /*
-            response.Cookies.Append("location", "token", new CookieOptions
-            {
-                Expires = DateTime.Now.AddDays(30),
-                HttpOnly = true,
-            });
-            */
+            var token = jwt.Token(user.Id, user.Version);
 
-            var token = jwt.Token(user.Id);
+            Response.Cookies.Append(RefreshOnly.Cookie, token, new()
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.Now.AddDays(30)
+            });
             return Ok(token);
         }
     }

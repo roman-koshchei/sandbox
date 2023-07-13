@@ -1,8 +1,10 @@
 using Data;
 using Data.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Sandbox.Auth;
 using Sandbox.Configuration;
 using Sandbox.Hubs;
 using Unator;
@@ -33,6 +35,9 @@ builder.Services.AddSignalR();
 builder.Services.AddJwt();
 builder.Services.AddEmail();
 
+builder.Services.AddAuthentication(options => options.DefaultAuthenticateScheme = RefreshOnly.Scheme)
+    .AddScheme<AuthenticationSchemeOptions, RefreshOnlyAuthenticationHandler>(RefreshOnly.Scheme, null);
+
 var app = builder.Build();
 
 // Use Swagger even in production mode
@@ -41,6 +46,7 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
